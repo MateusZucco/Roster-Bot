@@ -1,6 +1,6 @@
 const { Model, DataTypes } = require('sequelize')
 
-class RosterItems extends Model {
+class rostersItems extends Model {
     static init(sequelize) {
         super.init({
             id: {
@@ -28,14 +28,24 @@ class RosterItems extends Model {
                 type: DataTypes.INTEGER,
                 default: 0
             },
+            createdAt: {
+                type: DataTypes.DATE,
+                defaultValue: new Date(),
+                allowNull: false
+            },
+            updatedAt: {
+                type: DataTypes.DATE,
+                defaultValue: new Date(),
+                allowNull: false
+            }
         }, {
             sequelize
         })
     }
 
     static associate(models) {
-        this.belongsTo(models.Rosters, { foreignKey: 'rosterId', as: 'rosterItems' })
+        this.belongsTo(models.rosters, { foreignKey: 'rosterId', as: 'rosterItems' })
     }
 }
 
-module.exports = RosterItems
+module.exports = rostersItems

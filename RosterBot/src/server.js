@@ -3,7 +3,7 @@ const telegraf = require('telegraf')
 const extra = require('telegraf/extra')
 const markup = require('telegraf/markup')
 
-const rosterController = require('./controllers/create')
+const rosterController = require('./functions/create')
 
 let stage = 0
 
@@ -41,8 +41,9 @@ chatBot.action(/[1-9]+/, async chat => {
             stage = 'newList'
             await chat.reply('Qual será o titulo da lista?')
             break
-        case 101: 
-            console.log('SFAFFASSAFSFA')
+        case 101:
+            stage = 'newItem'
+            await chat.reply('Novo item:')
         
     }
 })
@@ -53,12 +54,24 @@ chatBot.on('text', async chat => {
             case 'newList':
                 arrayButtons = []
                 let result = await rosterController.createRoaster(chat, arrayButtons)
-                if(result[0]){
-                    arrayButtons = newArrayButtons
-                    await chat.reply(result[1], buttons())
-                    stage = 'newItems'
+                console.log(result)
+                if(result != false){
+                    result = result.data
+                    console.log(result)
+                    // items.push(`${index} - ${chat.update.message.text} \n`)
+                    // let text = `${title} \n${description} \n`
+                    // let rosterText = []
+                    // items.map((item) => {
+                    //     rosterText = text + item
+                    // })
+                    // arrayButtons = newArrayButtons
+                    // await chat.reply(result[1], buttons())
+                    // stage = 'newItems'
                 } 
-                
+                break
+            case 'newItem':
+                let newItem = await rosterController.addItem(chat, result)
+                console.log(rosterItems)
         }
     } catch (err) {
         console.log(err)

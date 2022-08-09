@@ -1,3 +1,5 @@
+const axios = require('axios')
+
 let newListStages = ['title', 'description', 'items', 'save']
 var title = ''
 var description = ''
@@ -14,17 +16,24 @@ const createRoaster = async (chat) => {
         await chat.reply('Adicione o primeiro item: ')
         return false
     } else if (newListStages[0] == 'items') {
+        items = {text: chat.update.message.text, icon: null, postion: 1}
         let index = items.length + 1
-        items.push(`${index} - ${chat.update.message.text} \n`)
-        let text = `${title} \n${description} \n`
-        items.map((item) => {
-            text = text + item
-        })
-        return [true, text]
+        const roster = {title: title, description: description, itemsNumber: index, userId: 1}
+        let result = await axios.post('http://localhost:3030/roster', {roster: roster, items: items})
+        
+        return result
 
     }
 }
 
+const addItem = async (chat, result) => {
+    console.log(result)
+    let newItem = chat.update.message.text
+    await axios.post('http://localhost:3030/roster', newItem)
+}
+
+
 module.exports = {
-    createRoaster
+    createRoaster,
+    addItem
 }
