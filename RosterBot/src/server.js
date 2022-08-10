@@ -6,13 +6,13 @@ const markup = require('telegraf/markup')
 const rosterController = require('./functions/create')
 
 let stage = 0
-
+let selectedRosterId = null
 //instanciando bot
 const chatBot = new telegraf(env.token)
 
 let arrayButtons = []
 const startButtons = [{ id: 1, value: 'Criar nova Lista' }, { id: 2, value: 'mandar o Za se foder' }]
-const newArrayButtons = [{ id: 101, value: 'Adicionar mais itens' }, { id: 102, value: 'Salvar lista' }]
+const newArrayButtons = [{ id: 101, value: 'Adicionar mais itens' }, { id: 102, value: 'Encerrar lista' }]
 
 let buttons = () => extra.markup(
     markup.inlineKeyboard(
@@ -44,7 +44,7 @@ chatBot.action(/[1-9]+/, async chat => {
         case 101:
             stage = 'newItem'
             await chat.reply('Novo item:')
-        
+
     }
 })
 
@@ -54,24 +54,29 @@ chatBot.on('text', async chat => {
             case 'newList':
                 arrayButtons = []
                 let result = await rosterController.createRoaster(chat, arrayButtons)
-                console.log(result)
-                if(result != false){
+                if (result != false) {
                     result = result.data
-                    console.log(result)
-                    // items.push(`${index} - ${chat.update.message.text} \n`)
-                    // let text = `${title} \n${description} \n`
-                    // let rosterText = []
-                    // items.map((item) => {
-                    //     rosterText = text + item
-                    // })
-                    // arrayButtons = newArrayButtons
+                    let resultText = `${result.roster.title} \n${result.roster.description}\n`
+                    result.items.map((item) => {
+                        resultText = ` ${resultText} ${item.position} - ${item.text} \n`
+                    })
+                    arrayButtons = newArrayButtons
                     // await chat.reply(result[1], buttons())
+                    await chat.reply(resultText, buttons())
+                    selectedRosterId = result.roster.id
                     // stage = 'newItems'
-                } 
+                }
                 break
             case 'newItem':
-                let newItem = await rosterController.addItem(chat, result)
-                console.log(rosterItems)
+                let updatedRoster = await rosterController.addItem(chat.update.message.text, selectedRosterId)
+                console.log(updatedRoster)
+                let resultText = `${updatedRoster.title} \n${updatedRoster.description}\n`
+                updatedRoster.rosterItems.map((item) => {
+                    resultText = ` ${resultText} ${item.position} - ${item.text} \n`
+                })
+                arrayButtons = newArrayButtons
+                await chat.reply(resultText, buttons())
+
         }
     } catch (err) {
         console.log(err)
