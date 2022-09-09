@@ -10,6 +10,11 @@ module.exports = {
         allowNull: false,
         unique: true
       },
+      telegramId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        unique: true
+      },
       name: {
         type: DataTypes.STRING,
         allowNull: false,

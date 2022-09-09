@@ -11,7 +11,7 @@ let selectedRosterId = null
 const chatBot = new telegraf(env.token)
 
 let arrayButtons = []
-const startButtons = [{ id: 1, value: 'Criar nova Lista' }, { id: 2, value: 'mandar o Za se foder' }]
+const startButtons = [{ id: 1, value: 'Criar nova Lista' }, { id: 2, value: 'Exibir listas salvas' }]
 const newArrayButtons = [{ id: 101, value: 'Adicionar mais itens' }, { id: 102, value: 'Encerrar lista' }]
 
 let buttons = () => extra.markup(
@@ -22,7 +22,7 @@ let buttons = () => extra.markup(
 
 
 chatBot.start(async chat => {
-    // console.log(chat)
+    console.log(chat.update.message.chat)
     const from = chat.update.message.from
     // console.log(from)
     const fromFirstName = from.first_name
@@ -35,15 +35,25 @@ chatBot.start(async chat => {
 chatBot.action(/[1-9]+/, async chat => {
     // console.log(chat.match[0])
     // console.log(chat)
-    // let choice = arrayButtons.filter(item => item.id == chat.match[0])
-    switch (arrayButtons[chat.match[0] - 1].id) {
+    let choice = arrayButtons.filter(item => item.id == chat.match['input'])
+    console.log(choice)
+    switch (choice[0].id) {
         case 1:
             stage = 'newList'
             await chat.reply('Qual será o titulo da lista?')
             break
+        case 2:
+
         case 101:
             stage = 'newItem'
             await chat.reply('Novo item:')
+            break
+        case 102:
+            await chat.reply('Lista encerrada com sucesso!')
+            arrayButtons = startButtons
+            stage = 'Menu'
+            await chat.reply('Como deseja prosseguir?', buttons())
+            break
 
     }
 })
@@ -69,7 +79,6 @@ chatBot.on('text', async chat => {
                 break
             case 'newItem':
                 let updatedRoster = await rosterController.addItem(chat.update.message.text, selectedRosterId)
-                console.log(updatedRoster)
                 let resultText = `${updatedRoster.title} \n${updatedRoster.description}\n`
                 updatedRoster.rosterItems.map((item) => {
                     resultText = ` ${resultText} ${item.position} - ${item.text} \n`
