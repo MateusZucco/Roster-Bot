@@ -1,21 +1,20 @@
 <template>
-  <v-app style="height:100vh; background-image: linear-gradient(to bottom, #006eff, #0097ff, #00b7ff, #00d3f9, #76eaee);">
+  <v-app style="height:100vh; background-image: linear-gradient(to bottom, #006eff, #005eff, #004eff, #003eff, #002eff);">
     <AppBar @changeId="changeScreen" />
-    <v-main style="width:100vw; height:calc(100vh - 175px)">
-      <!-- <Home v-if="screenId == 0" /> 
-      <Clube v-if="screenId == 1" />
-      <Avisos v-if="screenId == 5" />
-      <Associar v-if="screenId == 6" /> -->
+    <v-main style="width:100vw; height:calc(100vh - 75px); justify-content:center;">
+      <Register v-if="screenId == 3" /> 
     </v-main>
     
   </v-app>
 </template>
 <script>
 import AppBar from "./components/AppBar";
+import Register from "./components/Register";
 export default {
   name: "App",
   components: {
     AppBar,
+    Register
   },
   methods: {
     changeScreen(id){
@@ -112,5 +111,16 @@ export default {
   background-color: #c9c9c9;
   border-radius: 30px;
 }
-
+.v-main__wrap{
+  display:flex;
+  justify-content: center;
+}
+.v-text-field .v-label{
+  font-family: "secundary";
+  display: block;
+  font-style: normal;
+  font-size: 1em;
+  line-height: 1.01em;
+  letter-spacing: 0.01em;
+}
 </style>
