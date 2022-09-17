@@ -25,6 +25,16 @@
           depressed
         ></v-text-field>
         <v-text-field
+          v-model="email"
+          label="Email"
+          class="register-fields"
+          background-color="var(--font-primary)"
+          hide-details
+          dense
+          outlined
+          depressed
+        ></v-text-field>
+        <v-text-field
           v-model="phone"
           label="Telefone"
           class="register-fields"
@@ -72,7 +82,7 @@
   </v-row>
 </template>
 <script>
-import axios from 'axios'
+import axios from "axios";
 export default {
   data() {
     return {
@@ -80,6 +90,7 @@ export default {
       phone: "",
       telegramId: "",
       password: "",
+      email: "",
     };
   },
   methods: {
@@ -88,12 +99,17 @@ export default {
         .post("http://localhost:3030/new-user", {
           telegramId: this.telegramId,
           name: this.name,
-          email: "",
           password: this.password,
           phone: this.phone,
+          email: this.email,
         })
         .then(function (response) {
-          console.log(response);
+          // console.log(response)
+          // axios
+          //   .post("http://localhost:9999/callNewUser", { user: response.data })
+          //   .catch(function (error) {
+          //     console.log(error);
+          //   });
         })
         .catch(function (error) {
           console.log(error);

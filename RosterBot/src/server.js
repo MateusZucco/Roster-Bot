@@ -3,10 +3,13 @@ const telegraf = require('telegraf')
 const extra = require('telegraf/extra')
 const markup = require('telegraf/markup')
 
-const rosterController = require('./functions/create')
+const createFunctions = require('./functions/create')
+const getFunctions = require('./functions/listRosters')
+const roster = require('../../apiNode/src/controllers/roster')
 
 let stage = 0
 let selectedRosterId = null
+let userTelegramId = 0
 //instanciando bot
 const chatBot = new telegraf(env.token)
 
@@ -23,6 +26,7 @@ let buttons = () => extra.markup(
 
 chatBot.start(async chat => {
     console.log(chat.update.message.chat)
+    userTelegramId = chat.update.message.chat.id
     const from = chat.update.message.from
     // console.log(from)
     const fromFirstName = from.first_name
@@ -32,18 +36,27 @@ chatBot.start(async chat => {
     await chat.reply(`Escolha:`, buttons())
 
 })
+
 chatBot.action(/[1-9]+/, async chat => {
     // console.log(chat.match[0])
     // console.log(chat)
     let choice = arrayButtons.filter(item => item.id == chat.match['input'])
-    console.log(choice)
     switch (choice[0].id) {
         case 1:
-            stage = 'newList'
+            stage = 'newRoster'
             await chat.reply('Qual será o titulo da lista?')
             break
         case 2:
-
+            stage = 'listRosters'
+            let rosters = await getFunctions.listRosters(userTelegramId)
+            rosters.data.map((roster) => {
+                let resultText = `${roster.title} \n${roster.description}\n`
+                roster.rosterItems.map((item) => {
+                    resultText = ` ${resultText} ${item.position} - ${item.text} \n`
+                })
+                chat.reply(resultText)
+            })
+            break
         case 101:
             stage = 'newItem'
             await chat.reply('Novo item:')
@@ -54,16 +67,15 @@ chatBot.action(/[1-9]+/, async chat => {
             stage = 'Menu'
             await chat.reply('Como deseja prosseguir?', buttons())
             break
-
     }
 })
 
 chatBot.on('text', async chat => {
     try {
         switch (stage) {
-            case 'newList':
+            case 'newRoster':
                 arrayButtons = []
-                let result = await rosterController.createRoaster(chat, arrayButtons)
+                let result = await createFunctions.createRoaster(chat, arrayButtons)
                 if (result != false) {
                     result = result.data
                     let resultText = `${result.roster.title} \n${result.roster.description}\n`
@@ -78,14 +90,17 @@ chatBot.on('text', async chat => {
                 }
                 break
             case 'newItem':
-                let updatedRoster = await rosterController.addItem(chat.update.message.text, selectedRosterId)
+                let updatedRoster = await createFunctions.addItem(chat.update.message.text, selectedRosterId)
                 let resultText = `${updatedRoster.title} \n${updatedRoster.description}\n`
                 updatedRoster.rosterItems.map((item) => {
                     resultText = ` ${resultText} ${item.position} - ${item.text} \n`
                 })
                 arrayButtons = newArrayButtons
                 await chat.reply(resultText, buttons())
-
+                break
+            case 'listLists':
+                
+                
         }
     } catch (err) {
         console.log(err)

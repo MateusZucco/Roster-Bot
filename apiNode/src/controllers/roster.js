@@ -1,10 +1,30 @@
-// const users = require("../models/Users");
+const Users = require("../models/Users");
 const Rosters = require("../models/Rosters");
 const RosterItems = require("../models/RosterItems");
 // const rosterItems = require("../models/RosterItems");
 // const Sequelize = require('sequelize');
 
 module.exports = {
+    async list(req, res) {
+        try {
+            // console.log(parseInt(req.params.userId))
+            const user = await Users.findOne({ where: { telegramId: parseInt(req.params.userId) } })
+            // console.log(user.id)
+            const rosters = await Rosters.findAll({
+                where: { userId: user.id }, include: [
+                    {
+                        model: RosterItems,
+                        as: "rosterItems",
+                    }]
+            })
+            return res.status(200).json(rosters);
+
+        } catch (err) {
+            console.log(err)
+            return res.status(400).json(err);
+        }
+
+    },
     async create(req, res) {
         let rosterData = req.body.roster
         let itemsData = req.body.items
@@ -33,7 +53,7 @@ module.exports = {
             let roster = await Rosters.findOne({ where: { id: newItem.rosterId }, raw: true })
             newItem.position = roster.itemsNumber + 1
             await RosterItems.create(newItem)
-            await Rosters.update({ itemsNumber: newItem.position}, {where: { id: roster.id } })
+            await Rosters.update({ itemsNumber: newItem.position }, { where: { id: roster.id } })
             let updatedRoster = await Rosters.findAll({
                 where: { id: newItem.rosterId },
                 include: [
@@ -41,7 +61,7 @@ module.exports = {
                         model: RosterItems,
                         as: "rosterItems",
                     }],
-                
+
             })
             return res.status(200).json(updatedRoster);
         } catch (err) {
