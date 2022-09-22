@@ -7,9 +7,7 @@ const RosterItems = require("../models/RosterItems");
 module.exports = {
     async list(req, res) {
         try {
-            // console.log(parseInt(req.params.userId))
             const user = await Users.findOne({ where: { telegramId: parseInt(req.params.userId) } })
-            // console.log(user.id)
             const rosters = await Rosters.findAll({
                 where: { userId: user.id }, 
                 include:{
@@ -116,6 +114,19 @@ module.exports = {
                 ],
             })
             return res.status(200).json(updatedRoster);
+        } catch (err) {
+            console.log(err)
+            return res.status(400).json(err);
+        }
+    },
+
+    async delete(req, res) {
+        let { rosterId } = req.params
+        try {
+            console.log(rosterId)
+            await Rosters.destroy({where:{ id:rosterId}})
+            
+            return res.status(200).json();
         } catch (err) {
             console.log(err)
             return res.status(400).json(err);

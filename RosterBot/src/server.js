@@ -5,6 +5,7 @@ const env = require('./../.env.tokens')
 const createFunctions = require('./functions/createRosters')
 const editFunctions = require('./functions/editRosters')
 const getFunctions = require('./functions/listRosters')
+const deleteFunctions = require('./functions/deleteRosters')
 
 // plugin imports
 const telegraf = require('telegraf')
@@ -15,6 +16,7 @@ const markup = require('telegraf/markup')
 let arrayButtons = []
 const menuButtons = [{ id: 1, value: 'Criar nova Lista' }, { id: 2, value: 'Exibir listas salvas' }, { id: 3, value: 'Editar lista' }, { id: 4, value: 'Excluir lista' }]
 const newRosterButtons = [{ id: 101, value: 'Adicionar mais itens' }, { id: 102, value: 'Encerrar lista' }]
+const updateRosterButtons = [{ id: 301, value: 'Editar título' }, { id: 302, value: 'Editar descrição' }, { id: 303, value: 'Editar itens' }, { id: 304, value: 'Adicionar item' }, { id: 305, value: 'Deletar item' },]
 
 //functions
 let buttons = () => extra.markup(
@@ -35,6 +37,10 @@ const printRoster = async (roster) => {
     })
     return resultText
 }
+const newItem = async (chat, rosterId) => {
+    let newRoster = await createFunctions.addItem(chat, rosterId)
+    return await printRoster(newRoster)
+}
 
 //user variables
 let userTelegramId = 0
@@ -53,13 +59,16 @@ chatBot.start(async chat => {
 //edit variables
 let choice = null
 let editStage = 0
+let editItemStage = 0
+let editNewItemStage = 0
+let deleteRosterStage = 0
 let itemToEdit = null
-let choiced = null
-let isEditing = false
+let choicedRoster = null
+// let isMenuEdit = false
 let selectedRosterId = null
 
 chatBot.action(/[1-9]+/, async chat => {
-    if (!isEditing) {
+    if (editStage <= 0 && editItemStage <= 0 && deleteRosterStage <= 0) {
         choice = arrayButtons.find(item => item.id == chat.match['input'])
     }
     switch (choice.id) {
@@ -86,7 +95,6 @@ chatBot.action(/[1-9]+/, async chat => {
         case 3:
             let { data: rostersList } = await getFunctions.listRosters(userTelegramId)
             if (editStage == 0) {
-                isEditing = true
                 arrayButtons = []
                 await Promise.all(rostersList.map(async (roster) => {
                     arrayButtons.push({ id: roster.id, value: roster.title })
@@ -95,21 +103,54 @@ chatBot.action(/[1-9]+/, async chat => {
                 editStage = 1
                 break
             } else if (editStage == 1) {
-                choiced = arrayButtons.find(item => item.id == chat.match['input'])
-                choiced = rostersList.find(roster => roster.id == choiced.id)
-                let resultText = await printRoster(choiced)
-                await chat.reply(resultText)
+                choicedRoster = arrayButtons.find(item => item.id == chat.match['input'])
+                choicedRoster = rostersList.find(roster => roster.id == choicedRoster.id)
+                let resultText = await printRoster(choicedRoster)
+                // await chat.reply(resultText)
+                arrayButtons = updateRosterButtons
+                await chat.reply(resultText, buttons())
+                editStage = 0
+                break
+            }
+        case 303:
+            if (editItemStage == 0) {
+                console.log(choicedRoster)
                 arrayButtons = []
-                choiced.rosterItems.map((item) => {
+                choicedRoster.rosterItems.map((item) => {
                     arrayButtons.push({ id: item.id, value: `${item.position} - ${item.text}` })
                 })
-                await chat.reply(`Qual item da lista ${choiced.title} deseja editar?`, buttons())
-                editStage = 2
+                await chat.reply(`Qual item da lista ${choicedRoster.title} deseja editar?`, buttons())
+                editItemStage = 1
                 break
-            } else if (editStage == 2) {
+            } else if (editItemStage == 1) {
                 itemToEdit = arrayButtons.find(item => item.id == chat.match['input'])
                 await chat.reply(`Como deseja renomear ${itemToEdit.value} ?`)
                 stage = 'editItem'
+                editItemStage = 0
+                break
+            }
+
+        case 304:
+            await chat.reply(`Novo item:`)
+            stage = 'editNewItem'
+            break
+        case 4:
+            if (deleteRosterStage == 0) {
+            let { data: allRosters } = await getFunctions.listRosters(userTelegramId)
+                arrayButtons = []
+                await Promise.all(allRosters.map(async (roster) => {
+                    arrayButtons.push({ id: roster.id, value: roster.title })
+                }))
+                await chat.reply("Qual lista excluir?", buttons())
+                deleteRosterStage = 1
+            } else if (deleteRosterStage == 1) {
+                let rosterToDelete = arrayButtons.find(item => item.id == chat.match['input'])
+                let response = await deleteFunctions.deleteRoster(rosterToDelete)
+                deleteRosterStage = 0
+                if (response == 200){
+                    await chat.reply("Lista excluida com sucesso!")
+                    await loadMenuButtons(chat)
+                }
             }
     }
 })
@@ -129,23 +170,32 @@ chatBot.on('text', async chat => {
                 }
                 break
             case 'newItem':
-                let newRoster = await createFunctions.addItem(chat.update.message.text, selectedRosterId)
-                let resultText = await printRoster(newRoster)
+                let resultText = await newItem(chat.update.message.text, selectedRosterId)
                 arrayButtons = newRosterButtons
                 await chat.reply(resultText, buttons())
                 break
             case 'editItem':
-                let updatedRoster = await editFunctions.editItem(chat.update.message.text, choiced, itemToEdit)
+                let updatedRoster = await editFunctions.editItem(chat.update.message.text, choicedRoster, itemToEdit)
                 let updatedText = await printRoster(updatedRoster)
                 await chat.reply(`Lista editada com sucesso!`)
                 await chat.reply(updatedText)
                 await loadMenuButtons(chat)
-                 choice = null
-                 editStage = 0
-                 itemToEdit = null
-                 choiced = null
-                 isEditing = false
-                 selectedRosterId = null
+                choice = null
+                itemToEdit = null
+                choicedRoster = null
+                selectedRosterId = null
+                break
+            case 'editNewItem':
+                console.log(choicedRoster)
+                let newItemText = await newItem(chat.update.message.text, choicedRoster.id)
+                await chat.reply(`Item adicionado com sucesso!`)
+                await chat.reply(newItemText)
+                await loadMenuButtons(chat)
+                choice = null
+                itemToEdit = null
+                choicedRoster = null
+                selectedRosterId = null
+                break
         }
     } catch (err) {
         console.log(err)
