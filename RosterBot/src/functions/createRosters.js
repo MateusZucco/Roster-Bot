@@ -1,20 +1,20 @@
 const axios = require('axios')
 
-let newListStages = ['title', 'description', 'items', 'save']
+
 var title = ''
 var description = ''
-const createRoaster = async (chat) => {
-    if (newListStages[0] == 'title') {
+const createRoaster = async (chat, stages) => {
+    if (stages[0] == 'title') {
         title = chat.update.message.text
         await chat.reply('Qual a descrição da lista?')
-        newListStages.splice(0, 1)
+        stages.splice(0, 1)
         return false
-    } else if (newListStages[0] == 'description') {
+    } else if (stages[0] == 'description') {
         description = chat.update.message.text
-        newListStages.splice(0, 1)
+        stages.splice(0, 1)
         await chat.reply('Adicione o primeiro item: ')
         return false
-    } else if (newListStages[0] == 'items') {
+    } else if (stages[0] == 'items') {
         let item = {text: chat.update.message.text, icon: null, position: 1}
         let index = 1
         const roster = {title: title, description: description, itemsNumber: index, userId: 1}

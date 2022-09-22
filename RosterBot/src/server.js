@@ -81,6 +81,7 @@ chatBot.action(/[1-9]+/, async chat => {
             await chat.reply('Novo item:')
             break
         case 102:
+            newListStages = ['title', 'description', 'items']
             await chat.reply('Lista encerrada com sucesso!')
             await loadMenuButtons(chat)
             break
@@ -156,12 +157,13 @@ chatBot.action(/[1-9]+/, async chat => {
 })
 
 let stage = null
+let newListStages = ['title', 'description', 'items']
 chatBot.on('text', async chat => {
     try {
         switch (stage) {
             case 'newRoster':
                 // arrayButtons = []
-                let result = await createFunctions.createRoaster(chat, arrayButtons)
+                let result = await createFunctions.createRoaster(chat, newListStages)
                 if (result != false) {
                     let resultText = await printRoster(result)
                     arrayButtons = newRosterButtons
