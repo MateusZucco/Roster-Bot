@@ -20,7 +20,7 @@ const createRoaster = async (chat) => {
         const roster = {title: title, description: description, itemsNumber: index, userId: 1}
         let result = await axios.post('http://localhost:3030/roster', {roster: roster, items: item})
         
-        return result
+        return result.data
 
     }
 }

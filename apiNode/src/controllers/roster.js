@@ -11,11 +11,18 @@ module.exports = {
             const user = await Users.findOne({ where: { telegramId: parseInt(req.params.userId) } })
             // console.log(user.id)
             const rosters = await Rosters.findAll({
-                where: { userId: user.id }, include: [
-                    {
-                        model: RosterItems,
-                        as: "rosterItems",
-                    }]
+                where: { userId: user.id }, 
+                include:{
+                    model: RosterItems,
+                    as: "rosterItems",
+                },
+                order: [
+                    [
+                        { model: RosterItems, as: 'rosterItems' },
+                        'position',
+                        'ASC',
+                    ],
+                ],
             })
             return res.status(200).json(rosters);
 
@@ -25,6 +32,7 @@ module.exports = {
         }
 
     },
+
     async create(req, res) {
         let rosterData = req.body.roster
         let itemsData = req.body.items
@@ -35,9 +43,22 @@ module.exports = {
             itemsData.rosterId = roster.dataValues.id
             await RosterItems.create({ ...itemsData })
 
-            let rosterItems = await RosterItems.findAll({ where: { rosterId: itemsData.rosterId } })
+            let updatedRoster = await Rosters.findOne({
+                where: { id: roster.id },
+                include:{
+                    model: RosterItems,
+                    as: "rosterItems",
+                },
+                order: [
+                    [
+                        { model: RosterItems, as: 'rosterItems' },
+                        'position',
+                        'ASC',
+                    ],
+                ],
+            })
 
-            return res.status(200).json({ roster: roster, items: rosterItems });
+            return res.status(200).json(updatedRoster);
 
         } catch (err) {
             console.log(err)
@@ -56,12 +77,43 @@ module.exports = {
             await Rosters.update({ itemsNumber: newItem.position }, { where: { id: roster.id } })
             let updatedRoster = await Rosters.findAll({
                 where: { id: newItem.rosterId },
-                include: [
-                    {
-                        model: RosterItems,
-                        as: "rosterItems",
-                    }],
+                include:{
+                    model: RosterItems,
+                    as: "rosterItems",
+                },
+                order: [
+                    [
+                        { model: RosterItems, as: 'rosterItems' },
+                        'position',
+                        'ASC',
+                    ],
+                ],
+            })
+            return res.status(200).json(updatedRoster);
+        } catch (err) {
+            console.log(err)
+            return res.status(400).json(err);
+        }
+    },
 
+    async editItem(req, res) {
+        let { newValue } = req.body
+        let { rosterId, itemId } = req.params
+        try {
+            await RosterItems.update({ text: newValue }, { where: { id: itemId, rosterId: rosterId } })
+            let updatedRoster = await Rosters.findAll({
+                where: { id: rosterId },
+                include:{
+                    model: RosterItems,
+                    as: "rosterItems",
+                },
+                order: [
+                    [
+                        { model: RosterItems, as: 'rosterItems' },
+                        'position',
+                        'ASC',
+                    ],
+                ],
             })
             return res.status(200).json(updatedRoster);
         } catch (err) {
