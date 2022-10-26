@@ -113,6 +113,14 @@ chatBot.action(/[1-9]+/, async chat => {
                 editStage = 0
                 break
             }
+        case 301:
+            await chat.reply(`Qual o novo título da lista?`)
+            stage = 'editTitle'
+            break
+        case 302:
+            await chat.reply(`Qual a nova descrição da lista?`)
+            stage = 'editDescription'
+            break
         case 303:
             if (editItemStage == 0) {
                 console.log(choicedRoster)
@@ -137,7 +145,7 @@ chatBot.action(/[1-9]+/, async chat => {
             break
         case 4:
             if (deleteRosterStage == 0) {
-            let { data: allRosters } = await getFunctions.listRosters(userTelegramId)
+                let { data: allRosters } = await getFunctions.listRosters(userTelegramId)
                 arrayButtons = []
                 await Promise.all(allRosters.map(async (roster) => {
                     arrayButtons.push({ id: roster.id, value: roster.title })
@@ -148,7 +156,7 @@ chatBot.action(/[1-9]+/, async chat => {
                 let rosterToDelete = arrayButtons.find(item => item.id == chat.match['input'])
                 let response = await deleteFunctions.deleteRoster(rosterToDelete)
                 deleteRosterStage = 0
-                if (response == 200){
+                if (response == 200) {
                     await chat.reply("Lista excluida com sucesso!")
                     await loadMenuButtons(chat)
                 }
@@ -187,8 +195,28 @@ chatBot.on('text', async chat => {
                 choicedRoster = null
                 selectedRosterId = null
                 break
+            case 'editTitle':
+                let editedRoster = await editFunctions.editTitle(chat.update.message.text, choicedRoster)
+                let updated = await printRoster(editedRoster)
+                await chat.reply(`Lista editada com sucesso!`)
+                await chat.reply(updated)
+                await loadMenuButtons(chat)
+                choice = null
+                choicedRoster = null
+                selectedRosterId = null
+                break
+            case 'editDescription':
+                let editedDescriptiuonRoster = await editFunctions.editDescription(chat.update.message.text, choicedRoster)
+                let updatedDescription = await printRoster(editedDescriptiuonRoster)
+                await chat.reply(`Lista editada com sucesso!`)
+                await chat.reply(updatedDescription)
+                await loadMenuButtons(chat)
+                choice = null
+                choicedRoster = null
+                selectedRosterId = null
+                break
+
             case 'editNewItem':
-                console.log(choicedRoster)
                 let newItemText = await newItem(chat.update.message.text, choicedRoster.id)
                 await chat.reply(`Item adicionado com sucesso!`)
                 await chat.reply(newItemText)

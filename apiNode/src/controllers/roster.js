@@ -9,8 +9,8 @@ module.exports = {
         try {
             const user = await Users.findOne({ where: { telegramId: parseInt(req.params.userId) } })
             const rosters = await Rosters.findAll({
-                where: { userId: user.id }, 
-                include:{
+                where: { userId: user.id },
+                include: {
                     model: RosterItems,
                     as: "rosterItems",
                 },
@@ -43,7 +43,7 @@ module.exports = {
 
             let updatedRoster = await Rosters.findOne({
                 where: { id: roster.id },
-                include:{
+                include: {
                     model: RosterItems,
                     as: "rosterItems",
                 },
@@ -75,7 +75,7 @@ module.exports = {
             await Rosters.update({ itemsNumber: newItem.position }, { where: { id: roster.id } })
             let updatedRoster = await Rosters.findAll({
                 where: { id: newItem.rosterId },
-                include:{
+                include: {
                     model: RosterItems,
                     as: "rosterItems",
                 },
@@ -101,7 +101,59 @@ module.exports = {
             await RosterItems.update({ text: newValue }, { where: { id: itemId, rosterId: rosterId } })
             let updatedRoster = await Rosters.findAll({
                 where: { id: rosterId },
-                include:{
+                include: {
+                    model: RosterItems,
+                    as: "rosterItems",
+                },
+                order: [
+                    [
+                        { model: RosterItems, as: 'rosterItems' },
+                        'position',
+                        'ASC',
+                    ],
+                ],
+            })
+            return res.status(200).json(updatedRoster);
+        } catch (err) {
+            console.log(err)
+            return res.status(400).json(err);
+        }
+    },
+
+    async editTitle(req, res) {
+        let { newTitle } = req.body
+        let { rosterId } = req.params
+        try {
+            await Rosters.update({ title: newTitle }, { where: { id: rosterId } })
+            let updatedRoster = await Rosters.findAll({
+                where: { id: rosterId },
+                include: {
+                    model: RosterItems,
+                    as: "rosterItems",
+                },
+                order: [
+                    [
+                        { model: RosterItems, as: 'rosterItems' },
+                        'position',
+                        'ASC',
+                    ],
+                ],
+            })
+            return res.status(200).json(updatedRoster);
+        } catch (err) {
+            console.log(err)
+            return res.status(400).json(err);
+        }
+    },
+
+    async editDescription(req, res) {
+        let { newDescription } = req.body
+        let { rosterId } = req.params
+        try {
+            await Rosters.update({ description: newDescription }, { where: { id: rosterId } })
+            let updatedRoster = await Rosters.findAll({
+                where: { id: rosterId },
+                include: {
                     model: RosterItems,
                     as: "rosterItems",
                 },
@@ -124,8 +176,8 @@ module.exports = {
         let { rosterId } = req.params
         try {
             console.log(rosterId)
-            await Rosters.destroy({where:{ id:rosterId}})
-            
+            await Rosters.destroy({ where: { id: rosterId } })
+
             return res.status(200).json();
         } catch (err) {
             console.log(err)
