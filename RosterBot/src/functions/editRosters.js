@@ -12,8 +12,13 @@ const editDescription = async (newDescription, roster) => {
     let result = await axios.put(`http://localhost:3030/roster/${roster.id}/description`, {newDescription}) 
     return result.data[0]
 }
+const deleteItem = async (roster, item) => {  
+    let result = await axios.delete(`http://localhost:3030/roster/${roster.id}/item/${item.id}`) 
+    return result.data[0]
+}
 module.exports = {
     editItem,
     editTitle,
-    editDescription
+    editDescription,
+    deleteItem
 }

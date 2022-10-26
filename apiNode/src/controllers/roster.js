@@ -171,7 +171,41 @@ module.exports = {
             return res.status(400).json(err);
         }
     },
-
+    
+    async deleteItem(req, res) {
+        let { rosterId, itemId } = req.params
+        try {
+            await RosterItems.destroy({ where: { id: itemId, rosterId: rosterId } })
+            let updatedRoster = await Rosters.findOne({
+                where: { id: rosterId },
+            })
+            let items = await RosterItems.findAll({ where: { id: itemId, rosterId: rosterId } })
+            items.map(async(item) => {
+                await RosterItems.update({ position: item.position - 1 },{ where: { id: itemId, rosterId: rosterId } })
+            })
+            await Rosters.update({ itemsNumber: updatedRoster.itemsNumber - 1 },{
+                where: { id: rosterId },
+            })
+            updatedRoster = await Rosters.findAll({
+                where: { id: rosterId },
+                include: {
+                    model: RosterItems,
+                    as: "rosterItems",
+                },
+                order: [
+                    [
+                        { model: RosterItems, as: 'rosterItems' },
+                        'position',
+                        'ASC',
+                    ],
+                ],
+            })
+            return res.status(200).json(updatedRoster);
+        } catch (err) {
+            console.log(err)
+            return res.status(400).json(err);
+        }
+    },
     async delete(req, res) {
         let { rosterId } = req.params
         try {
