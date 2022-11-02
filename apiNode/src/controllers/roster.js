@@ -7,7 +7,7 @@ const RosterItems = require("../models/RosterItems");
 module.exports = {
     async list(req, res) {
         try {
-            const user = await Users.findOne({ where: { telegramId: parseInt(req.params.userId) } })
+            const user = await Users.findOne({ where: { telegramId: req.params.userId } })
             const rosters = await Rosters.findAll({
                 where: { userId: user.id },
                 include: {

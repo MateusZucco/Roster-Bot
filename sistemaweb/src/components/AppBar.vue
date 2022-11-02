@@ -29,7 +29,7 @@
             Início
           </p>
         </v-btn>
-        <v-btn
+        <!-- <v-btn
           class="mr-4"
           @click="activeButton(1)"
           href="#"
@@ -58,7 +58,7 @@
           >
             Manual
           </p>
-        </v-btn>
+        </v-btn> -->
         <v-btn
           class="mr-4"
           @click="activeButton(3)"
@@ -86,7 +86,7 @@ export default {
   data() {
     return {
       selectedButton: 0,
-      title: "<Hoster Bot Hub />",
+      title: "<Roster Bot Hub />",
     };
   },
   methods: {

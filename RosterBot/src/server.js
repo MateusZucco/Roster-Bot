@@ -43,14 +43,14 @@ const newItem = async (chat, rosterId) => {
 }
 
 //user variables
-let userTelegramId = 0
+let userTelegramId = ''
 
 // bot start
 const chatBot = new telegraf(env.token)
 let fromFirstName = null
 let fromLastName = null
 chatBot.start(async chat => {
-    userTelegramId = chat.update.message.chat.id
+    userTelegramId = `${chat.update.message.chat.id}`
     const from = chat.update.message.from
     fromFirstName = from.first_name
     fromLastName = from.last_name
