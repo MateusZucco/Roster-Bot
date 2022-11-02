@@ -12,13 +12,12 @@ const createRoaster = async (chat, stages) => {
     } else if (stages[0] == 'description') {
         description = chat.update.message.text
         stages.splice(0, 1)
-        await chat.reply('Adicione o primeiro item: ')
+        await chat.reply("Novos itens: (caso vá adicionar mais de um item, separe-os por ';')")
         return false
     } else if (stages[0] == 'items') {
-        let item = {text: chat.update.message.text, icon: null, position: 1}
-        let index = 1
-        const roster = {title: title, description: description, itemsNumber: index, userId: 1}
-        let result = await axios.post('http://localhost:3030/roster', {roster: roster, items: item})
+        let itens = {text: chat.update.message.text}
+        const roster = {title: title, description: description,  userId: 1}
+        let result = await axios.post('http://localhost:3030/roster', {roster: roster, itens: itens})
         
         return result.data
 
@@ -26,8 +25,8 @@ const createRoaster = async (chat, stages) => {
 }
 
 const addItem = async (newItem, selectedRosterId) => {
-    let item = {text: newItem, icon: null, position: null, rosterId: selectedRosterId}
-    let result = await axios.post('http://localhost:3030/roster-item', item)
+    let item = {text: newItem}
+    let result = await axios.post(`http://localhost:3030/roster/${selectedRosterId}/new-item`, item)
     return result.data[0]
 }
 

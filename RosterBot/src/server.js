@@ -16,7 +16,7 @@ const markup = require('telegraf/markup')
 let arrayButtons = []
 const menuButtons = [{ id: 1, value: 'Criar nova Lista' }, { id: 2, value: 'Exibir listas salvas' }, { id: 3, value: 'Editar lista' }, { id: 4, value: 'Excluir lista' }]
 const newRosterButtons = [{ id: 101, value: 'Adicionar mais itens' }, { id: 102, value: 'Encerrar lista' }]
-const updateRosterButtons = [{ id: 301, value: 'Editar título' }, { id: 302, value: 'Editar descrição' }, { id: 303, value: 'Editar itens' }, { id: 304, value: 'Adicionar item' }, { id: 305, value: 'Deletar item' },]
+const updateRosterButtons = [{ id: 301, value: 'Editar título' }, { id: 302, value: 'Editar descrição' }, { id: 303, value: 'Editar item' }, { id: 304, value: 'Adicionar items' }, { id: 305, value: 'Deletar item' }, { id: 306, value: 'Alterar posições' }]
 
 //functions
 let buttons = () => extra.markup(
@@ -27,7 +27,7 @@ let buttons = () => extra.markup(
 
 const loadMenuButtons = async (chat) => {
     arrayButtons = menuButtons
-    await chat.reply(`Como deseja prosseguir?`, buttons())
+    await chat.reply(`${fromFirstName[0].toUpperCase() + fromFirstName.substring(1)} ${fromLastName[0].toUpperCase() + fromLastName.substring(1)}, selicone uma ação para prosseguir.`, buttons())
 }
 
 const printRoster = async (roster) => {
@@ -47,11 +47,13 @@ let userTelegramId = 0
 
 // bot start
 const chatBot = new telegraf(env.token)
+let fromFirstName = null
+let fromLastName = null
 chatBot.start(async chat => {
     userTelegramId = chat.update.message.chat.id
     const from = chat.update.message.from
-    const fromFirstName = from.first_name
-    const fromLastName = from.last_name
+    fromFirstName = from.first_name
+    fromLastName = from.last_name
     await chat.reply(`Bem vindo ${fromFirstName[0].toUpperCase() + fromFirstName.substring(1)} ${fromLastName[0].toUpperCase() + fromLastName.substring(1)}!`)
     await loadMenuButtons(chat)
 })
@@ -60,7 +62,9 @@ chatBot.start(async chat => {
 let choice = {}
 let editStage = 0
 let editItemStage = 0
-let editNewItemStage = 0
+// let editNewItemStage = 0
+let idOne = 0
+let idTwo = 0
 let deleteRosterStage = 0
 let itemToEdit = null
 let itemToExclude = null
@@ -70,7 +74,10 @@ let selectedRosterId = null
 
 chatBot.action(/[1-9]+/, async chat => {
     if (editStage <= 0 && editItemStage <= 0 && deleteRosterStage <= 0) {
-        choice = arrayButtons.find(item => item.id == chat.match['input'])
+        let selectedButton = arrayButtons.find(item => item.id == chat.match['input'])
+        if (!!selectedButton) {
+            choice = selectedButton
+        }
     }
     switch (choice.id) {
         case 1:
@@ -79,7 +86,7 @@ chatBot.action(/[1-9]+/, async chat => {
             break
         case 101:
             stage = 'newItem'
-            await chat.reply('Novo item:')
+            await chat.reply("Novos itens: (caso vá adicionar mais de um item, separe-os por ';')")
             break
         case 102:
             newListStages = ['title', 'description', 'items']
@@ -88,30 +95,40 @@ chatBot.action(/[1-9]+/, async chat => {
             break
         case 2:
             let { data: rosters } = await getFunctions.listRosters(userTelegramId)
-            await Promise.all(rosters.map(async (roster) => {
-                let resultText = await printRoster(roster)
-                await chat.reply(resultText)
-            }))
+            if (rosters.length > 0) {
+                await Promise.all(rosters.map(async (roster) => {
+                    let resultText = await printRoster(roster)
+                    await chat.reply(resultText)
+                }))
+            } else {
+                await chat.reply('Nenhuma lista salva.')
+            }
             await loadMenuButtons(chat)
             break
         case 3:
             let { data: rostersList } = await getFunctions.listRosters(userTelegramId)
-            if (editStage == 0) {
-                arrayButtons = []
-                await Promise.all(rostersList.map(async (roster) => {
-                    arrayButtons.push({ id: roster.id, value: roster.title })
-                }))
-                await chat.reply("Qual lista deseja editar?", buttons())
-                editStage = 1
-                break
-            } else if (editStage == 1) {
-                choicedRoster = arrayButtons.find(item => item.id == chat.match['input'])
-                choicedRoster = rostersList.find(roster => roster.id == choicedRoster.id)
-                let resultText = await printRoster(choicedRoster)
-                // await chat.reply(resultText)
-                arrayButtons = updateRosterButtons
-                await chat.reply(resultText, buttons())
-                editStage = 0
+            if (rostersList.length > 0) {
+                if (editStage == 0) {
+                    arrayButtons = []
+                    await Promise.all(rostersList.map(async (roster) => {
+                        arrayButtons.push({ id: roster.id, value: roster.title })
+                    }))
+                    await chat.reply("Qual lista deseja editar?", buttons())
+                    editStage = 1
+                    break
+                } else if (editStage == 1) {
+                    choicedRoster = arrayButtons.find(item => item.id == chat.match['input'])
+                    choicedRoster = rostersList.find(roster => roster.id == choicedRoster.id)
+                    let resultText = await printRoster(choicedRoster)
+                    // await chat.reply(resultText)
+                    arrayButtons = updateRosterButtons
+                    await chat.reply(resultText, buttons())
+                    editStage = 0
+                    break
+                }
+            } else {
+                await chat.reply('Nenhuma lista salva.')
+                await loadMenuButtons(chat)
                 break
             }
         case 301:
@@ -141,7 +158,7 @@ chatBot.action(/[1-9]+/, async chat => {
             }
 
         case 304:
-            await chat.reply(`Novo item:`)
+            await chat.reply("Novos itens: (caso vá adicionar mais de um item, separe-os por ';')")
             stage = 'editNewItem'
             break
         case 305:
@@ -164,6 +181,42 @@ chatBot.action(/[1-9]+/, async chat => {
                 choicedRoster = null
                 selectedRosterId = null
                 editItemStage = 0
+                break
+            }
+        case 306:
+            if (editItemStage == 0) {
+                arrayButtons = []
+                choicedRoster.rosterItems.map((item) => {
+                    arrayButtons.push({ id: item.id, value: `${item.position} - ${item.text}` })
+                })
+                await chat.reply(`Selecione o primerio item:`, buttons())
+                arrayButtons = []
+                editItemStage = 1
+                break
+            } else if (editItemStage == 1) {
+                idOne = chat.match['input']
+                choicedRoster.rosterItems.map((item) => {
+                    if (item.id != idOne) {
+                        arrayButtons.push({ id: item.id, value: `${item.position} - ${item.text}` })
+                    }
+                })
+                await chat.reply(`Selecione o segundo item:`, buttons())
+                editItemStage = 2
+                break
+            } else if (editItemStage == 2) {
+                idTwo = chat.match['input']
+                let updatedRoster = await editFunctions.changePositions(choicedRoster, idOne, idTwo)
+                let updatedText = await printRoster(updatedRoster)
+                await chat.reply(`Lista editada com sucesso!`)
+                await chat.reply(updatedText)
+                await loadMenuButtons(chat)
+                choice = null
+                itemToEdit = null
+                choicedRoster = null
+                selectedRosterId = null
+                editItemStage = 0
+                idOne = 0
+                idTwo = 0
                 break
             }
         case 4:
