@@ -49,7 +49,7 @@ module.exports = {
                 await RosterItems.create({ text: item, icon: null, position: position + 1, rosterId: roster.dataValues.id })
             }))
 
-            await Rosters.update({ itemsNumber:position + 1 }, {where: {id: roster.id}})
+            await Rosters.update({ itemsNumber: position + 1 }, { where: { id: roster.id } })
 
             let updatedRoster = await Rosters.findOne({
                 where: { id: roster.id },
@@ -81,7 +81,7 @@ module.exports = {
         let { rosterId } = req.params
         try {
             let roster = await Rosters.findOne({ where: { id: rosterId }, raw: true })
-            
+
             newItens = newItens.text
             newItens = newItens.replace(/; /g, ";");
             newItens = newItens.replace(/ ;/g, ";");
@@ -195,8 +195,7 @@ module.exports = {
 
     async changePositions(req, res) {
         const { rosterId, idItemOne, idItemTwo } = req.params
-        console.log(idItemOne)
-        console.log(idItemTwo)
+        
         try {
             let itemOne = await RosterItems.findOne({
                 where: { rosterId: rosterId, id: idItemOne }
@@ -234,13 +233,20 @@ module.exports = {
     async deleteItem(req, res) {
         let { rosterId, itemId } = req.params
         try {
+            let selectedItem = await RosterItems.findOne({ where: { id: itemId, rosterId: rosterId } })
             await RosterItems.destroy({ where: { id: itemId, rosterId: rosterId } })
             let updatedRoster = await Rosters.findOne({
                 where: { id: rosterId },
+                include: {
+                    model: RosterItems,
+                    as: "rosterItems",
+                },
             })
-            let items = await RosterItems.findAll({ where: { id: itemId, rosterId: rosterId } })
-            items.map(async (item) => {
-                await RosterItems.update({ position: item.position - 1 }, { where: { id: itemId, rosterId: rosterId } })
+
+            updatedRoster.rosterItems.map(async (item) => {
+                if (item.position > selectedItem.position) {
+                    await RosterItems.update({ position: item.position - 1 }, { where: { id: item.id, rosterId: rosterId } })
+                }
             })
             await Rosters.update({ itemsNumber: updatedRoster.itemsNumber - 1 }, {
                 where: { id: rosterId },
@@ -265,12 +271,11 @@ module.exports = {
             return res.status(400).json(err);
         }
     },
+
     async delete(req, res) {
         let { rosterId } = req.params
         try {
-            console.log(rosterId)
             await Rosters.destroy({ where: { id: rosterId } })
-
             return res.status(200).json();
         } catch (err) {
             console.log(err)
