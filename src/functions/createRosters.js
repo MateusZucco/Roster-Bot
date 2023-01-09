@@ -3,7 +3,7 @@ const axios = require('axios')
 
 var title = ''
 var description = ''
-const createRoaster = async (chat, stages) => {
+const createRoaster = async (chat, stages, jwt) => {
     if (stages[0] == 'title') {
         title = chat.update.message.text
         await chat.reply('Qual a descrição da lista?')
@@ -15,18 +15,18 @@ const createRoaster = async (chat, stages) => {
         await chat.reply("Novos itens: (caso vá adicionar mais de um item, separe-os por ';')")
         return false
     } else if (stages[0] == 'items') {
-        let itens = {text: chat.update.message.text}
-        const roster = {title: title, description: description,  userId: 1}
-        let result = await axios.post('http://localhost:3030/roster', {roster: roster, itens: itens})
-        
+        let itens = { text: chat.update.message.text }
+        const roster = { title: title, description: description}
+        let result = await axios.post('http://localhost:3030/roster', { roster: roster, itens: itens }, { headers: { token: jwt } })
+
         return result.data
 
     }
 }
 
-const addItem = async (newItem, selectedRosterId) => {
-    let item = {text: newItem}
-    let result = await axios.post(`http://localhost:3030/roster/${selectedRosterId}/new-item`, item)
+const addItem = async (newItem, selectedRosterId, jwt) => {
+    let item = { text: newItem }
+    let result = await axios.post(`http://localhost:3030/roster/${selectedRosterId}/new-item`, item, { headers: { token: jwt } })
     return result.data[0]
 }
 
