@@ -2,11 +2,10 @@ const axios = require('axios')
 
 const listRosters = async (jwt) => {
     try {
-        let result = await axios.get(`http://localhost:3030/list-rosters`, { headers: { token: jwt } })
-        return result
+        let response = await axios.get(`http://localhost:3030/list-rosters`, { headers: { token: jwt } })
+        return response.data
     } catch (err) {
-        console.log(err)
-        return err
+        return err.response.data
     }
 }
 module.exports = {

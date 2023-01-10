@@ -17,17 +17,25 @@ const createRoaster = async (chat, stages, jwt) => {
     } else if (stages[0] == 'items') {
         let itens = { text: chat.update.message.text }
         const roster = { title: title, description: description}
-        let result = await axios.post('http://localhost:3030/roster', { roster: roster, itens: itens }, { headers: { token: jwt } })
-
-        return result.data
+        
+        try{
+            let response = await axios.post('http://localhost:3030/roster', { roster: roster, itens: itens }, { headers: { token: jwt } })
+            return response.data
+        }catch(err) {
+            return err.response.data
+        }
 
     }
 }
 
 const addItem = async (newItem, selectedRosterId, jwt) => {
     let item = { text: newItem }
-    let result = await axios.post(`http://localhost:3030/roster/${selectedRosterId}/new-item`, item, { headers: { token: jwt } })
-    return result.data[0]
+    try{
+        let result = await axios.post(`http://localhost:3030/roster/${selectedRosterId}/new-item`, item, { headers: { token: jwt } })
+        return result.data[0]
+    }catch(err){
+        return err.response.data
+    }
 }
 
 

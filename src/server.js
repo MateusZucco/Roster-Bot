@@ -39,8 +39,13 @@ const printRoster = async (roster) => {
     return resultText
 }
 const newItem = async (chat, rosterId) => {
-    let newRoster = await createFunctions.addItem(chat, rosterId, user.jwtToken)
-    return await printRoster(newRoster)
+    let newRosterResult = await createFunctions.addItem(chat, rosterId, user.jwtToken)
+    if(newRosterResult && !!newRosterResult.error){
+        await chat.reply(`${newRosterResult.error}`)
+        await chat.reply("Insira a senha novamente:")
+    }else{
+        return await printRoster(newRosterResult)
+    }
 }
 
 //user variables
@@ -54,14 +59,19 @@ let stage = null
 
 
 // bot start
-const chatBot = new telegraf(env.token)
+const chatBot = new telegraf(env.TOKEN)
 chatBot.start(async chat => {
     user.userTelegramId = `${chat.update.message.chat.id}`
     user.from = chat.update.message.from
     user.fullName = `${user.from.first_name[0].toUpperCase() + user.from.first_name.substring(1)} ${user.from.last_name[0].toUpperCase() + user.from.last_name.substring(1)}` 
-    await chat.reply(`Bem vindo ${user.fullName}!`)
-    await chat.reply(`Por favor insira sua senha:`)
-    stage = 'login'
+    const RESULT = await loginFunctions.verifyUserRegister(user.userTelegramId)
+    if(RESULT.isRegistred){
+        await chat.reply(`Bem vindo ${user.fullName}!`)
+        await chat.reply(`Por favor insira sua senha:`)
+        stage = 'login'
+    }else{
+        await chat.reply(`${RESULT.message}`)
+    }
     // await loadMenuButtons(chat)
 })
 
@@ -99,42 +109,52 @@ chatBot.action(/[1-9]+/, async chat => {
             await loadMenuButtons(chat)
             break
         case 2:
-            let { data: rosters } = await getFunctions.listRosters(user.jwtToken)
-            if (rosters.length > 0) {
-                await Promise.all(rosters.map(async (roster) => {
-                    let resultText = await printRoster(roster)
-                    await chat.reply(resultText)
-                }))
-            } else {
-                await chat.reply('Nenhuma lista salva.')
+            let requestResult= await getFunctions.listRosters(user.jwtToken)
+            if(requestResult && !!requestResult.error){
+                await chat.reply(`${requestResult.error}`)
+            }else{
+                if (requestResult.length > 0) {
+                    await Promise.all(requestResult.map(async (roster) => {
+                        let resultText = await printRoster(roster)
+                        await chat.reply(resultText)
+                    }))
+                } else {
+                    await chat.reply('Nenhuma lista salva.')
+                }
             }
             await loadMenuButtons(chat)
             break
         case 3:
-            let { data: rostersList } = await getFunctions.listRosters(user.jwtToken)
-            if (rostersList.length > 0) {
-                if (editStage == 0) {
-                    arrayButtons = []
-                    await Promise.all(rostersList.map(async (roster) => {
-                        arrayButtons.push({ id: roster.id, value: roster.title })
-                    }))
-                    await chat.reply("Qual lista deseja editar?", buttons())
-                    editStage = 1
-                    break
-                } else if (editStage == 1) {
-                    choicedRoster = arrayButtons.find(item => item.id == chat.match['input'])
-                    choicedRoster = rostersList.find(roster => roster.id == choicedRoster.id)
-                    let resultText = await printRoster(choicedRoster)
-                    // await chat.reply(resultText)
-                    arrayButtons = updateRosterButtons
-                    await chat.reply(resultText, buttons())
-                    editStage = 0
+            let rostersListResult = await getFunctions.listRosters(user.jwtToken)
+            if(rostersListResult && !!rostersListResult.error){
+                await chat.reply(`${rostersListResult.error}`)
+                await loadMenuButtons(chat)
+                break;
+            }else{
+                if (rostersListResult.length > 0) {
+                    if (editStage == 0) {
+                        arrayButtons = []
+                        await Promise.all(rostersListResult.map(async (roster) => {
+                            arrayButtons.push({ id: roster.id, value: roster.title })
+                        }))
+                        await chat.reply("Qual lista deseja editar?", buttons())
+                        editStage = 1
+                        break
+                    } else if (editStage == 1) {
+                        choicedRoster = arrayButtons.find(item => item.id == chat.match['input'])
+                        choicedRoster = rostersListResult.find(roster => roster.id == choicedRoster.id)
+                        let resultText = await printRoster(choicedRoster)
+                        // await chat.reply(resultText)
+                        arrayButtons = updateRosterButtons
+                        await chat.reply(resultText, buttons())
+                        editStage = 0
+                        break
+                    }
+                } else {
+                    await chat.reply('Nenhuma lista salva.')
+                    await loadMenuButtons(chat)
                     break
                 }
-            } else {
-                await chat.reply('Nenhuma lista salva.')
-                await loadMenuButtons(chat)
-                break
             }
         case 301:
             await chat.reply(`Qual o novo título da lista?`)
@@ -146,7 +166,6 @@ chatBot.action(/[1-9]+/, async chat => {
             break
         case 303:
             if (editItemStage == 0) {
-                console.log(choicedRoster)
                 arrayButtons = []
                 choicedRoster.rosterItems.map((item) => {
                     arrayButtons.push({ id: item.id, value: `${item.position} - ${item.text}` })
@@ -178,15 +197,21 @@ chatBot.action(/[1-9]+/, async chat => {
             } else if (editItemStage == 1) {
                 itemToExclude = arrayButtons.find(item => item.id == chat.match['input'])
                 let deletedItemRoster = await editFunctions.deleteItem(choicedRoster, itemToExclude, user.jwtToken)
-                let updatedItemsRoster = await printRoster(deletedItemRoster)
-                await chat.reply(`Lista editada com sucesso!`)
-                await chat.reply(updatedItemsRoster)
-                await loadMenuButtons(chat)
-                choice = null
-                choicedRoster = null
-                selectedRosterId = null
-                editItemStage = 0
-                break
+                if(deletedItemRoster && !!deletedItemRoster.error){
+                    await chat.reply(`${deletedItemRoster.error}`)
+                    await loadMenuButtons(chat)
+                    break;
+                }else{
+                    let updatedItemsRoster = await printRoster(deletedItemRoster)
+                    await chat.reply(`Lista editada com sucesso!`)
+                    await chat.reply(updatedItemsRoster)
+                    await loadMenuButtons(chat)
+                    choice = null
+                    choicedRoster = null
+                    selectedRosterId = null
+                    editItemStage = 0
+                    break
+                }
             }
         case 306:
             if (editItemStage == 0) {
@@ -211,36 +236,51 @@ chatBot.action(/[1-9]+/, async chat => {
             } else if (editItemStage == 2) {
                 idTwo = chat.match['input']
                 let updatedRoster = await editFunctions.changePositions(choicedRoster, idOne, idTwo, user.jwtToken)
-                let updatedText = await printRoster(updatedRoster)
-                await chat.reply(`Lista editada com sucesso!`)
-                await chat.reply(updatedText)
-                await loadMenuButtons(chat)
-                choice = null
-                itemToEdit = null
-                choicedRoster = null
-                selectedRosterId = null
-                editItemStage = 0
-                idOne = 0
-                idTwo = 0
-                break
+                if(updatedRoster && !!updatedRoster.error){
+                    await chat.reply(`${updatedRoster.error}`)
+                    await loadMenuButtons(chat)
+                    break;
+                }else{
+                    let updatedText = await printRoster(updatedRoster)
+                    await chat.reply(`Lista editada com sucesso!`)
+                    await chat.reply(updatedText)
+                    await loadMenuButtons(chat)
+                    choice = null
+                    itemToEdit = null
+                    choicedRoster = null
+                    selectedRosterId = null
+                    editItemStage = 0
+                    idOne = 0
+                    idTwo = 0
+                    break
+                }
             }
         case 4:
             if (deleteRosterStage == 0) {
-                let { data: allRosters } = await getFunctions.listRosters(user.jwtToken)
-                arrayButtons = []
-                await Promise.all(allRosters.map(async (roster) => {
-                    arrayButtons.push({ id: roster.id, value: roster.title })
-                }))
-                await chat.reply("Qual lista excluir?", buttons())
-                deleteRosterStage = 1
+                let allRostersResult = await getFunctions.listRosters(user.jwtToken)
+                if(allRostersResult && !!allRostersResult.error){
+                    await chat.reply(`${allRostersResult.error}`)
+                    await loadMenuButtons(chat)
+                    break;
+                }else{
+                    arrayButtons = []
+                    await Promise.all(allRostersResult.map(async (roster) => {
+                        arrayButtons.push({ id: roster.id, value: roster.title })
+                    }))
+                    await chat.reply("Qual lista excluir?", buttons())
+                    deleteRosterStage = 1
+                }
             } else if (deleteRosterStage == 1) {
                 let rosterToDelete = arrayButtons.find(item => item.id == chat.match['input'])
                 let response = await deleteFunctions.deleteRoster(rosterToDelete, user.jwtToken)
                 deleteRosterStage = 0
                 if (response == 200) {
                     await chat.reply("Lista excluida com sucesso!")
-                    await loadMenuButtons(chat)
+                }else{
+                    await chat.reply(`${response.error}`)
                 }
+                await loadMenuButtons(chat)
+                break;
             }
     }
 })
@@ -252,23 +292,29 @@ chatBot.on('text', async chat => {
         switch (stage) {
             case 'login':
                 let loginResult = await loginFunctions.loginUser(user.userTelegramId, chat.update.message.text)
-                if(loginResult.data.error){
-                    await chat.reply(`${loginResult.data.error}`)
+                if(loginResult && !!loginResult.error){
+                    await chat.reply(`${loginResult.error}`)
                     await chat.reply("Insira a senha novamente:")
                 }else{
                     await chat.reply("Usuário logado com sucesso!")
-                    user.jwtToken = loginResult.data.token
+                    user.jwtToken = loginResult.token
                     await loadMenuButtons(chat)
                 }
                 break;
             case 'newRoster':
                 // arrayButtons = []
                 let result = await createFunctions.createRoaster(chat, newListStages, user.jwtToken)
-                if (result != false) {
-                    let resultText = await printRoster(result)
-                    arrayButtons = newRosterButtons
-                    await chat.reply(resultText, buttons())
-                    selectedRosterId = result.id
+                if ((result && !!result.error)) {
+                    await chat.reply(`${result.error}`)
+                    await loadMenuButtons(chat)
+                    break;
+                }else{
+                    if(result != false){
+                        let resultText = await printRoster(result)
+                        arrayButtons = newRosterButtons
+                        await chat.reply(resultText, buttons())
+                        selectedRosterId = result.id
+                    }
                 }
                 break
             case 'newItem':
@@ -278,35 +324,53 @@ chatBot.on('text', async chat => {
                 break
             case 'editItem':
                 let updatedRoster = await editFunctions.editItem(chat.update.message.text, choicedRoster, itemToEdit, user.jwtToken)
-                let updatedText = await printRoster(updatedRoster)
-                await chat.reply(`Lista editada com sucesso!`)
-                await chat.reply(updatedText)
-                await loadMenuButtons(chat)
-                choice = null
-                itemToEdit = null
-                choicedRoster = null
-                selectedRosterId = null
-                break
+                if (updatedRoster && !!updatedRoster.error) {
+                    await chat.reply(`${updatedRoster.error}`)
+                    await loadMenuButtons(chat)
+                    break;
+                }else{
+                    let updatedText = await printRoster(updatedRoster)
+                    await chat.reply(`Lista editada com sucesso!`)
+                    await chat.reply(updatedText)
+                    await loadMenuButtons(chat)
+                    choice = null
+                    itemToEdit = null
+                    choicedRoster = null
+                    selectedRosterId = null
+                    break;
+                }
             case 'editTitle':
                 let editedRoster = await editFunctions.editTitle(chat.update.message.text, choicedRoster, user.jwtToken)
-                let updated = await printRoster(editedRoster)
-                await chat.reply(`Lista editada com sucesso!`)
-                await chat.reply(updated)
-                await loadMenuButtons(chat)
-                choice = null
-                choicedRoster = null
-                selectedRosterId = null
-                break
+                if (editedRoster && !!editedRoster.error) {
+                    await chat.reply(`${editedRoster.error}`)
+                    await loadMenuButtons(chat)
+                    break;
+                }else{
+                    let updated = await printRoster(editedRoster)
+                    await chat.reply(`Lista editada com sucesso!`)
+                    await chat.reply(updated)
+                    await loadMenuButtons(chat)
+                    choice = null
+                    choicedRoster = null
+                    selectedRosterId = null
+                    break
+                }
             case 'editDescription':
                 let editedDescriptionRoster = await editFunctions.editDescription(chat.update.message.text, choicedRoster, user.jwtToken)
-                let updatedDescription = await printRoster(editedDescriptionRoster)
-                await chat.reply(`Lista editada com sucesso!`)
-                await chat.reply(updatedDescription)
-                await loadMenuButtons(chat)
-                choice = null
-                choicedRoster = null
-                selectedRosterId = null
-                break
+                if (editedDescriptionRoster && !!editedDescriptionRoster.error) {
+                    await chat.reply(`${editedDescriptionRoster.error}`)
+                    await loadMenuButtons(chat)
+                    break;
+                }else{
+                    let updatedDescription = await printRoster(editedDescriptionRoster)
+                    await chat.reply(`Lista editada com sucesso!`)
+                    await chat.reply(updatedDescription)
+                    await loadMenuButtons(chat)
+                    choice = null
+                    choicedRoster = null
+                    selectedRosterId = null
+                    break
+                }
             case 'editNewItem':
                 let newItemText = await newItem(chat.update.message.text, choicedRoster.id)
                 await chat.reply(`Item adicionado com sucesso!`)
