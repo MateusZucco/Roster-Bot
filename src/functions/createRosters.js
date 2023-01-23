@@ -32,7 +32,7 @@ const addItem = async (newItem, selectedRosterId, jwt) => {
     let item = { text: newItem }
     try{
         let result = await axios.post(`http://localhost:3030/roster/${selectedRosterId}/new-item`, item, { headers: { token: jwt } })
-        return result.data[0]
+        return result.data
     }catch(err){
         return err.response.data
     }
