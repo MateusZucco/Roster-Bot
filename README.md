@@ -51,8 +51,8 @@ module.exports = {
 **Cloning the Repository**
 
 ```
-$ git clone https://github.com/MateusZucco/Roster-Bot-Api.git
-$ cd roster-bot-api
+$ git clone https://github.com/MateusZucco/Roster-Bot.git
+$ cd roster-bot
 ```
 
 **Installing dependencies**
