@@ -1,6 +1,6 @@
 # Roster Bot API
 
-This is a Telegram Chatbot, called Roster Bot, with the purpose of helping users when they need manage a roster. I did it for my undergraduate thesis for [IFRS](https://ifrs.edu.br/) about Chatbots.
+This is a Telegram Chatbot, called Roster Bot, with the purpose of helping users when they need manage a roster. I did it for my undergraduate thesis for [IFRS](https://ifrs.edu.br/) about Chatbots. You can find the bot in Telegram [here](https://t.me/BOT_roster_BOT). 
 
 ## About this project
  
@@ -8,25 +8,25 @@ In this repository you will find a Telegram ChatBotbuilt with [Node.js](https://
   
 ## ChatBot functions
 - Authenticate user <br /><br />
-![Preview-Screens](https://github.com/MateusZucco/Roster-Bot/blob/master/assets/login.jpeg)
+![Preview-Screens](https://github.com/MateusZucco/Roster-Bot/blob/master/assets/login2.jpeg)
 <br /><br />
-- show all rosters <br /><br />
+- Show all rosters <br /><br />
 ![Preview-Screens](https://github.com/MateusZucco/Roster-Bot/blob/master/assets/list.png)
 <br /><br />
-- create new roster<br /><br />
+- Create new roster<br /><br />
 ![Preview-Screens](https://github.com/MateusZucco/Roster-Bot/blob/master/assets/create.png)
 <br /><br />
-- edit roster
+- Edit roster
   - edit title<br /><br />
 ![Preview-Screens](https://github.com/MateusZucco/Roster-Bot/blob/master/assets/edit%20title.png)
 <br /><br />
-  - edit description<br /><br />
-  - remove item<br /><br />
+  - Edit description<br /><br />
+  - Remove item<br /><br />
 ![Preview-Screens](https://github.com/MateusZucco/Roster-Bot/blob/master/assets/delete%20item.png)
 <br /><br />
-  - add new item<br /><br />
-  - edit item<br /><br />
-- delete roster<br /><br />
+  - Add new item<br /><br />
+  - Edit item<br /><br />
+- Delete roster<br /><br />
 ![Preview-Screens](https://github.com/MateusZucco/Roster-Bot/blob/master/assets/delete.png)
 <br /><br />
   
